@@ -1,7 +1,8 @@
 #include <cuda_runtime.h>
 #include <helper_cuda.h>
 
-#include "conv1DKernel.cuh"
+#include "conv1DKernel.h"
+#include "conv1DKernelHeaders.cuh"
 
 #define MAX_MASK_SIZE 9
 

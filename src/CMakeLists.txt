@@ -4,4 +4,6 @@ target_include_directories(conv1DLibrary PUBLIC "${PROJECT_BINARY_DIR}" "${CUDA_
 
 target_include_directories(conv1DLibrary INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}")
 
+#Initializing Cmake CUDA_ARCHITECTURES since it's required for versions 3.18+
 set_property(TARGET conv1DLibrary PROPERTY CUDA_ARCHITECTURES 61-real)
+
