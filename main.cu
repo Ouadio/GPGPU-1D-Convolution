@@ -1,5 +1,5 @@
 #include "cmath"
-#include "conv1DLibrary/conv1DKernel.cuh"
+#include "conv1DKernel.cuh"
 #include <cuda_runtime.h>
 #include <helper_cuda.h>
 #include <stdio.h>

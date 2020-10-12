@@ -11,7 +11,7 @@
 __constant__ double myMask_d[MAX_MASK_SIZE];
 
 // Simple 1D Convolution
-__global__ void conv1DKernel_basic(double *input, double *output, int length,
+__global__ void conv1DKernel_basic(const double *input, double *output, int length,
                                    int half_mask_size) {
   int tid = threadIdx.x;
   int i = tid + blockIdx.x * blockDim.x;
@@ -30,7 +30,7 @@ __global__ void conv1DKernel_basic(double *input, double *output, int length,
 }
 
 // Tiled 1D Convolution
-__global__ void conv1DKernel_tiled(double *input, double *output, int length,
+__global__ void conv1DKernel_tiled(const double *input, double *output, int length,
                                    int half_mask_size) {
   int tid = threadIdx.x;
   int i = tid + blockIdx.x * blockDim.x;
@@ -77,7 +77,7 @@ __global__ void conv1DKernel_tiled(double *input, double *output, int length,
 // The idea is to load only internal cells per TILE in the scratch memory
 // Ghost values can be accessed directly from input which is HOPEFULLY still
 // IN THE L2 CACHE (not the DRAM ofc)
-__global__ void conv1DKernel_simply_tiled(double *input, double *output,
+__global__ void conv1DKernel_simply_tiled(const double *input, double *output,
                                           int length, int half_mask_size) {
   int tid = threadIdx.x;
   int i = tid + blockIdx.x * blockDim.x;
@@ -118,7 +118,7 @@ __global__ void conv1DKernel_simply_tiled(double *input, double *output,
 }
 
 // Tiled 1D Convolution with dynamic shared memory
-__global__ void conv1DKernel_tiled_dynamic_shared(double *input, double *output,
+__global__ void conv1DKernel_tiled_dynamic_shared(const double *input, double *output,
                                                   int length,
                                                   int half_mask_size) {
   int tid = threadIdx.x;
@@ -170,7 +170,7 @@ __global__ void conv1DKernel_tiled_dynamic_shared(double *input, double *output,
 //=======================================================================================
 
 // Wrapper arround basic 1D conv kernel
-void conv1DKernelBasicLauncher(double *input, double *output, double *myMask,
+void conv1DKernelBasicLauncher(const double *input, double *output, double *myMask,
                                int half_mask_size, int N) {
 
   double *input_d = nullptr;
@@ -203,7 +203,7 @@ void conv1DKernelBasicLauncher(double *input, double *output, double *myMask,
 }
 
 // Wrapper arround tiled 1D conv kernel
-void conv1DKernelTiledLauncher(double *input, double *output, double *myMask,
+void conv1DKernelTiledLauncher(const double *input, double *output, double *myMask,
                                int half_mask_size, int N) {
 
   double *input_d = nullptr;
@@ -235,7 +235,7 @@ void conv1DKernelTiledLauncher(double *input, double *output, double *myMask,
 }
 
 // Wrapper arround simplified tiled 1D conv kernel
-void conv1DKernelSimplyTiledLauncher(double *input, double *output,
+void conv1DKernelSimplyTiledLauncher(const double *input, double *output,
                                      double *myMask, int half_mask_size,
                                      int N) {
 
@@ -269,7 +269,7 @@ void conv1DKernelSimplyTiledLauncher(double *input, double *output,
 
 // Wrapper arround tiled 1D conv kernel with dynamic shared memory
 
-void conv1DKernelTiledDynamicSharedLauncher(double *input, double *output,
+void conv1DKernelTiledDynamicSharedLauncher(const double *input, double *output,
                                             double *myMask, int half_mask_size,
                                             int N) {
 

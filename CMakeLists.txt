@@ -6,9 +6,12 @@ FIND_PACKAGE(CUDA REQUIRED)
 
 SET(CUDA_INCLUDE_DIRS "/opt/cuda/samples/common/inc" ${CUDA_INCLUDE_DIRS})
 
-add_subdirectory(conv1DLibrary conv1DLibrary)
+add_subdirectory(src conv1DLibrary )
 
 add_executable(conv1DLauncher main.cu) 
+
+#Initializing Cmake CUDA_ARCHITECTURES since it's required for versions 3.18+
+set_property(TARGET conv1DLauncher PROPERTY CUDA_ARCHITECTURES 61-real)
 
 target_include_directories(conv1DLauncher PUBLIC "${CUDA_INCLUDE_DIRS}" "${PROJECT_BINARY_DIR}")
 

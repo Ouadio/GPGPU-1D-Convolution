@@ -4,3 +4,4 @@ target_include_directories(conv1DLibrary PUBLIC "${PROJECT_BINARY_DIR}" "${CUDA_
 
 target_include_directories(conv1DLibrary INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}")
 
+set_property(TARGET conv1DLibrary PROPERTY CUDA_ARCHITECTURES 61-real)
