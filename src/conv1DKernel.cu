@@ -12,8 +12,8 @@
 __constant__ double myMask_d[MAX_MASK_SIZE];
 
 // Simple 1D Convolution
-__global__ void conv1DKernel_basic(const double *input, double *output, int length,
-                                   int half_mask_size) {
+__global__ void conv1DKernel_basic(const double *input, double *output,
+                                   int length, int half_mask_size) {
   int tid = threadIdx.x;
   int i = tid + blockIdx.x * blockDim.x;
 
@@ -31,8 +31,8 @@ __global__ void conv1DKernel_basic(const double *input, double *output, int leng
 }
 
 // Tiled 1D Convolution
-__global__ void conv1DKernel_tiled(const double *input, double *output, int length,
-                                   int half_mask_size) {
+__global__ void conv1DKernel_tiled(const double *input, double *output,
+                                   int length, int half_mask_size) {
   int tid = threadIdx.x;
   int i = tid + blockIdx.x * blockDim.x;
   int relative_i = i - half_mask_size;
@@ -119,8 +119,8 @@ __global__ void conv1DKernel_simply_tiled(const double *input, double *output,
 }
 
 // Tiled 1D Convolution with dynamic shared memory
-__global__ void conv1DKernel_tiled_dynamic_shared(const double *input, double *output,
-                                                  int length,
+__global__ void conv1DKernel_tiled_dynamic_shared(const double *input,
+                                                  double *output, int length,
                                                   int half_mask_size) {
   int tid = threadIdx.x;
   int i = tid + blockIdx.x * blockDim.x;
@@ -165,14 +165,13 @@ __global__ void conv1DKernel_tiled_dynamic_shared(const double *input, double *o
 
 //=======================================================================================
 //=======================================================================================
-//=======================             WRAPPERS ===============================
-//=======================================================================================
+//=================================== WRAPPERS ==========================================
 //=======================================================================================
 //=======================================================================================
 
 // Wrapper arround basic 1D conv kernel
-void conv1DKernelBasicLauncher(const double *input, double *output, double *myMask,
-                               int half_mask_size, int N) {
+void conv1DKernelBasicLauncher(const double *input, double *output,
+                               double *myMask, int half_mask_size, int N) {
 
   double *input_d = nullptr;
   double *output_d = nullptr;
@@ -193,7 +192,7 @@ void conv1DKernelBasicLauncher(const double *input, double *output, double *myMa
 
   conv1DKernel_basic<<<gridDim, blockDim>>>(input_d, output_d, N,
                                             half_mask_size);
-  printf("\nBasic kernel used \n");
+  // printf("\nBasic kernel used \n");
 
   // Kernel Ends Here
 
@@ -204,8 +203,8 @@ void conv1DKernelBasicLauncher(const double *input, double *output, double *myMa
 }
 
 // Wrapper arround tiled 1D conv kernel
-void conv1DKernelTiledLauncher(const double *input, double *output, double *myMask,
-                               int half_mask_size, int N) {
+void conv1DKernelTiledLauncher(const double *input, double *output,
+                               double *myMask, int half_mask_size, int N) {
 
   double *input_d = nullptr;
   double *output_d = nullptr;
@@ -225,7 +224,7 @@ void conv1DKernelTiledLauncher(const double *input, double *output, double *myMa
 
   conv1DKernel_tiled<<<gridDim, blockDim>>>(input_d, output_d, N,
                                             half_mask_size);
-  printf("\nTiled kernel used \n");
+  // printf("\nTiled kernel used \n");
 
   // Kernel Ends Here
 
@@ -258,7 +257,7 @@ void conv1DKernelSimplyTiledLauncher(const double *input, double *output,
 
   conv1DKernel_simply_tiled<<<gridDim, blockDim>>>(input_d, output_d, N,
                                                    half_mask_size);
-  printf("\nSimplified Tiled kernel used \n");
+  // printf("\nSimplified Tiled kernel used \n");
 
   // Kernel Ends Here
 
@@ -295,7 +294,7 @@ void conv1DKernelTiledDynamicSharedLauncher(const double *input, double *output,
   conv1DKernel_tiled_dynamic_shared<<<
       gridDim, blockDim, (TILE_SIZE + 2 * half_mask_size) * sizeof(double)>>>(
       input_d, output_d, N, half_mask_size);
-  printf("\nTiled kernel with Dynamic shared mem used \n");
+  // printf("\nTiled kernel with Dynamic shared mem used \n");
 
   // Kernel Ends Here
 
