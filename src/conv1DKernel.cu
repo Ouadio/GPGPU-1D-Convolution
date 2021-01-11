@@ -165,13 +165,15 @@ __global__ void conv1DKernel_tiled_dynamic_shared(const double *input,
 
 //=======================================================================================
 //=======================================================================================
-//=================================== WRAPPERS ==========================================
+//=================================== WRAPPERS
+//==========================================
 //=======================================================================================
 //=======================================================================================
 
 // Wrapper arround basic 1D conv kernel
 void conv1DKernelBasicLauncher(const double *input, double *output,
-                               double *myMask, int half_mask_size, int N) {
+                               double *myMask, int half_mask_size, int N,
+                               float *time) {
 
   double *input_d = nullptr;
   double *output_d = nullptr;
@@ -185,18 +187,32 @@ void conv1DKernelBasicLauncher(const double *input, double *output,
   // Cte memory copy
   cudaMemcpyToSymbol(myMask_d, myMask, MAX_MASK_SIZE * sizeof(double));
 
-  // Kernel Starts Here
-
   dim3 blockDim(TILE_SIZE, 1, 1);
   dim3 gridDim(ceil((float)N / TILE_SIZE), 1, 1);
 
+  // Computing kernel execution time (memcopy omitted for now)
+  cudaEvent_t start, end;
+
+  cudaEventCreate(&start);
+  cudaEventCreate(&end);
+
+  cudaEventRecord(start);
+
+  // Kernel Starts Here
   conv1DKernel_basic<<<gridDim, blockDim>>>(input_d, output_d, N,
                                             half_mask_size);
-  // printf("\nBasic kernel used \n");
-
   // Kernel Ends Here
 
+  cudaEventRecord(end);
+  cudaEventSynchronize(end);
+
   cudaMemcpy(output, output_d, N * sizeof(double), cudaMemcpyDeviceToHost);
+
+  // Writing elapsed time to (float*) time argument
+  cudaEventElapsedTime(time, start, end);
+
+  cudaEventDestroy(start);
+  cudaEventDestroy(end);
 
   cudaFree(input_d);
   cudaFree(output_d);
@@ -204,7 +220,8 @@ void conv1DKernelBasicLauncher(const double *input, double *output,
 
 // Wrapper arround tiled 1D conv kernel
 void conv1DKernelTiledLauncher(const double *input, double *output,
-                               double *myMask, int half_mask_size, int N) {
+                               double *myMask, int half_mask_size, int N,
+                               float *time) {
 
   double *input_d = nullptr;
   double *output_d = nullptr;
@@ -217,18 +234,32 @@ void conv1DKernelTiledLauncher(const double *input, double *output,
   cudaMemcpy(input_d, input, N * sizeof(double), cudaMemcpyHostToDevice);
   cudaMemcpyToSymbol(myMask_d, myMask, MAX_MASK_SIZE * sizeof(double));
 
-  // Kernel Starts Here
-
   dim3 blockDim(TILE_SIZE, 1, 1);
   dim3 gridDim(ceil((float)N / TILE_SIZE), 1, 1);
 
+  // Computing kernel execution time (memcopy omitted for now)
+  cudaEvent_t start, end;
+
+  cudaEventCreate(&start);
+  cudaEventCreate(&end);
+
+  cudaEventRecord(start);
+
+  // Kernel Starts Here
   conv1DKernel_tiled<<<gridDim, blockDim>>>(input_d, output_d, N,
                                             half_mask_size);
-  // printf("\nTiled kernel used \n");
-
   // Kernel Ends Here
 
+  cudaEventRecord(end);
+  cudaEventSynchronize(end);
+
   cudaMemcpy(output, output_d, N * sizeof(double), cudaMemcpyDeviceToHost);
+
+  // Writing elapsed time to (float*) time argument
+  cudaEventElapsedTime(time, start, end);
+
+  cudaEventDestroy(start);
+  cudaEventDestroy(end);
 
   cudaFree(input_d);
   cudaFree(output_d);
@@ -236,8 +267,8 @@ void conv1DKernelTiledLauncher(const double *input, double *output,
 
 // Wrapper arround simplified tiled 1D conv kernel
 void conv1DKernelSimplyTiledLauncher(const double *input, double *output,
-                                     double *myMask, int half_mask_size,
-                                     int N) {
+                                     double *myMask, int half_mask_size, int N,
+                                     float *time) {
 
   double *input_d = nullptr;
   double *output_d = nullptr;
@@ -250,18 +281,32 @@ void conv1DKernelSimplyTiledLauncher(const double *input, double *output,
   cudaMemcpy(input_d, input, N * sizeof(double), cudaMemcpyHostToDevice);
   cudaMemcpyToSymbol(myMask_d, myMask, MAX_MASK_SIZE * sizeof(double));
 
-  // Kernel Starts Here
-
   dim3 blockDim(TILE_SIZE, 1, 1);
   dim3 gridDim(ceil((float)N / TILE_SIZE), 1, 1);
 
+  // Computing kernel execution time (memcopy omitted for now)
+  cudaEvent_t start, end;
+
+  cudaEventCreate(&start);
+  cudaEventCreate(&end);
+
+  cudaEventRecord(start);
+
+  // Kernel Starts Here
   conv1DKernel_simply_tiled<<<gridDim, blockDim>>>(input_d, output_d, N,
                                                    half_mask_size);
-  // printf("\nSimplified Tiled kernel used \n");
-
   // Kernel Ends Here
 
+  cudaEventRecord(end);
+  cudaEventSynchronize(end);
+
   cudaMemcpy(output, output_d, N * sizeof(double), cudaMemcpyDeviceToHost);
+
+  // Writing elapsed time to (float*) time argument
+  cudaEventElapsedTime(time, start, end);
+
+  cudaEventDestroy(start);
+  cudaEventDestroy(end);
 
   cudaFree(input_d);
   cudaFree(output_d);
@@ -271,7 +316,7 @@ void conv1DKernelSimplyTiledLauncher(const double *input, double *output,
 
 void conv1DKernelTiledDynamicSharedLauncher(const double *input, double *output,
                                             double *myMask, int half_mask_size,
-                                            int N) {
+                                            int N, float *time) {
 
   double *input_d = nullptr;
   double *output_d = nullptr;
@@ -284,21 +329,35 @@ void conv1DKernelTiledDynamicSharedLauncher(const double *input, double *output,
   cudaMemcpy(input_d, input, N * sizeof(double), cudaMemcpyHostToDevice);
   cudaMemcpyToSymbol(myMask_d, myMask, MAX_MASK_SIZE * sizeof(double));
 
-  // Kernel Starts Here
-
   dim3 blockDim(TILE_SIZE, 1, 1);
   dim3 gridDim(ceil((float)N / TILE_SIZE), 1, 1);
 
+  // Computing kernel execution time (memcopy omitted for now)
+  cudaEvent_t start, end;
+
+  cudaEventCreate(&start);
+  cudaEventCreate(&end);
+
+  cudaEventRecord(start);
+
+  // Kernel Starts Here
   // Here hal_mask_size can be decided at runtime so shared mem allocation is
   // dynamic
   conv1DKernel_tiled_dynamic_shared<<<
       gridDim, blockDim, (TILE_SIZE + 2 * half_mask_size) * sizeof(double)>>>(
       input_d, output_d, N, half_mask_size);
-  // printf("\nTiled kernel with Dynamic shared mem used \n");
-
   // Kernel Ends Here
 
+  cudaEventRecord(end);
+  cudaEventSynchronize(end);
+
   cudaMemcpy(output, output_d, N * sizeof(double), cudaMemcpyDeviceToHost);
+
+  // Writing elapsed time to (float*) time argument
+  cudaEventElapsedTime(time, start, end);
+
+  cudaEventDestroy(start);
+  cudaEventDestroy(end);
 
   cudaFree(input_d);
   cudaFree(output_d);

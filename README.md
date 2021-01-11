@@ -1,5 +1,5 @@
 # Parallel Pattern : Convolution
-## A set of Parallelized 1D Convolution implementations using CUDA 
+## A set of Parallelized 1D Convolution implementations using CUDA with basic performance benchmarking
 ### I. Naive basic implementation  
 ### II. Tiled implementation  
 ### III. Simplified Tiled implementation 
@@ -10,6 +10,6 @@
     + (Bug) Fixing erronous results when using large arrays with tiled implementations.  
     + (Test) Including GTest/GMock suites as project submodule.
     + (Code Quality) Refactoring source code, seperating kernels from wrappers, re-organizing project structure.
-    
+    + (Advanced Performance Metrics) 
 ------------
 Author : Ouadie EL FAROUKI. 2020.

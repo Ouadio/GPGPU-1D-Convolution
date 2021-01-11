@@ -2,6 +2,7 @@
 #include "conv1DKernel.h"
 #include <iostream>
 #include "time.h"
+#include <cuda_runtime.h>
 
 #define MAX_MASK_SIZE 9
 
@@ -14,7 +15,7 @@ using namespace std;
 int main(int argc, char **argv)
 {
   //Reading size of the array from execution argv
-  size_t p = 10;
+  size_t p = 13;
 
   if (argc > 1)
   {
@@ -49,30 +50,41 @@ int main(int argc, char **argv)
 
   // Launching Conv 1D kernels through their corresponding wrappers
   // M/2 is half the kernel size
+  float timeBasic, timeTiled, timeTiledStatic, timeTiledDynamic;
 
   conv1DKernelBasicLauncher(input,
                             output,
                             myMask,
                             M / 2,
-                            N);
+                            N,
+                            &timeBasic);
 
   conv1DKernelTiledLauncher(input,
                             outputTest,
                             myMask,
                             M / 2,
-                            N);
+                            N,
+                            &timeTiled);
 
   conv1DKernelSimplyTiledLauncher(input,
                                   outputTest2,
                                   myMask,
                                   M / 2,
-                                  N);
+                                  N,
+                                  &timeTiledStatic);
 
   conv1DKernelTiledDynamicSharedLauncher(input,
                                          outputTest3,
                                          myMask,
                                          M / 2,
-                                         N);
+                                         N,
+                                         &timeTiledDynamic);
+
+  //-------------------------------------0-----------------------------------
+
+  cout << "============ Basic Implementation of Conv1D (No Tiling | No Shared Memory) ============" << endl;
+
+  cout << "Elapsed time : " << timeBasic << endl;
 
   //-------------------------------------1-----------------------------------
   cout << "============ Testing Tiled Conv1D ============" << endl;
@@ -94,6 +106,7 @@ int main(int argc, char **argv)
   if (correct)
   {
     cout << "============ Test 1 passed successfully ! ============" << endl;
+    cout << "Elapsed time : " << timeTiled << endl;
   }
 
   //-------------------------------------2-----------------------------------
@@ -115,6 +128,7 @@ int main(int argc, char **argv)
   if (correct)
   {
     cout << "============ Test 2 passed successfully ! ============" << endl;
+    cout << "Elapsed time : " << timeTiledStatic << endl;
   }
 
   //-------------------------------------3-----------------------------------
@@ -137,6 +151,7 @@ int main(int argc, char **argv)
   if (correct)
   {
     cout << "============ Test 3 passed successfully ! ============" << endl;
+    cout << "Elapsed time : " << timeTiledDynamic << endl;
   }
 
   free(input);
