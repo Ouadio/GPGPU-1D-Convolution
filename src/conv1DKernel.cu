@@ -4,9 +4,9 @@
 #include "conv1DKernel.h"
 #include "conv1DKernelHeaders.cuh"
 
-#define MAX_MASK_SIZE 9
+#define MAX_MASK_SIZE 33
 
-#define TILE_SIZE 1024
+#define TILE_SIZE 512
 
 // Dynamic allocation of constant memory is not allowed in CUDA.
 __constant__ double myMask_d[MAX_MASK_SIZE];
@@ -21,11 +21,17 @@ __global__ void conv1DKernel_basic(const double *input, double *output,
   if (i < length) {
 
     p = myMask_d[half_mask_size] * input[i];
-    for (int j = 1; j < half_mask_size + 1; j++) {
+
+    for (int j = 1; j <= half_mask_size; j++) {
       p += myMask_d[half_mask_size + j] *
            (((i - j < 0) ? 0 : input[i - j]) +
-            ((i + j > length) ? 0 : input[i + j]));
+            ((i + j >= length) ? 0 : input[i + j]));
     }
+
+    // Number of global mem accesses per thread : 1 + halfMaskSize*2 + 1 +
+    // halfMaskSize = 2 + 3*halfMaskSize So global nb of accesses :
+    // (2+3*halfMaskSize)*n
+
     output[i] = p;
   }
 }
@@ -102,12 +108,13 @@ __global__ void conv1DKernel_simply_tiled(const double *input, double *output,
 
     for (int j = 1; j < half_mask_size + 1; j++) {
       if (tid > half_mask_size) {
+
         if (tid < temp - half_mask_size) {
           p += myMask_d[half_mask_size + j] *
                (input_shared[tid - j] + input_shared[tid + j]);
         } else {
           p += myMask_d[half_mask_size + j] *
-               (input_shared[tid - j] + ((i + j) > length ? 0 : input[i + j]));
+               (input_shared[tid - j] + ((i + j) >= length ? 0 : input[i + j]));
         }
       } else {
         p += myMask_d[half_mask_size + j] *
@@ -170,6 +177,23 @@ __global__ void conv1DKernel_tiled_dynamic_shared(const double *input,
 //=======================================================================================
 //=======================================================================================
 
+// Sequential Implementation
+
+void conv1DSequentialLauncher(const double *input, double *output,
+                              double *myMask, int half_mask_size, int length) {
+
+  for (size_t i = 0; i < length; i++) {
+
+    output[i] = input[i] * myMask[half_mask_size];
+
+    for (size_t j = 1; j <= half_mask_size; j++) {
+      output[i] += ((((int)i - (int)j) < 0 ? 0 : input[i - j]) +
+                    ((i + j) >= length ? 0 : input[i + j])) *
+                   myMask[half_mask_size + j];
+    }
+  }
+}
+
 // Wrapper arround basic 1D conv kernel
 void conv1DKernelBasicLauncher(const double *input, double *output,
                                double *myMask, int half_mask_size, int N,
@@ -204,11 +228,12 @@ void conv1DKernelBasicLauncher(const double *input, double *output,
   // Kernel Ends Here
 
   cudaEventRecord(end);
-  cudaEventSynchronize(end);
 
   cudaMemcpy(output, output_d, N * sizeof(double), cudaMemcpyDeviceToHost);
 
   // Writing elapsed time to (float*) time argument
+  cudaEventSynchronize(end);
+
   cudaEventElapsedTime(time, start, end);
 
   cudaEventDestroy(start);
@@ -251,11 +276,12 @@ void conv1DKernelTiledLauncher(const double *input, double *output,
   // Kernel Ends Here
 
   cudaEventRecord(end);
-  cudaEventSynchronize(end);
 
   cudaMemcpy(output, output_d, N * sizeof(double), cudaMemcpyDeviceToHost);
 
   // Writing elapsed time to (float*) time argument
+  cudaEventSynchronize(end);
+
   cudaEventElapsedTime(time, start, end);
 
   cudaEventDestroy(start);
@@ -298,11 +324,11 @@ void conv1DKernelSimplyTiledLauncher(const double *input, double *output,
   // Kernel Ends Here
 
   cudaEventRecord(end);
-  cudaEventSynchronize(end);
 
   cudaMemcpy(output, output_d, N * sizeof(double), cudaMemcpyDeviceToHost);
 
   // Writing elapsed time to (float*) time argument
+  cudaEventSynchronize(end);
   cudaEventElapsedTime(time, start, end);
 
   cudaEventDestroy(start);
@@ -349,11 +375,11 @@ void conv1DKernelTiledDynamicSharedLauncher(const double *input, double *output,
   // Kernel Ends Here
 
   cudaEventRecord(end);
-  cudaEventSynchronize(end);
 
   cudaMemcpy(output, output_d, N * sizeof(double), cudaMemcpyDeviceToHost);
 
   // Writing elapsed time to (float*) time argument
+  cudaEventSynchronize(end);
   cudaEventElapsedTime(time, start, end);
 
   cudaEventDestroy(start);

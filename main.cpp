@@ -3,8 +3,9 @@
 #include <iostream>
 #include "time.h"
 #include <cuda_runtime.h>
+#include <chrono>
 
-#define MAX_MASK_SIZE 9
+#define MAX_MASK_SIZE 33
 
 using namespace std;
 
@@ -22,22 +23,22 @@ int main(int argc, char **argv)
     p = atoi(argv[1]);
   }
 
-  int N{1024};
-
-  N = 1 << p;
+  int N = 1 << p;
 
   // Setting mask values/weights
   int M = MAX_MASK_SIZE;
-  double myMask[M] = {0.001, 0.01, 0.1, 1, 10, 1, 0.1, 0.01, 0.001};
+  double myMask[M];
+  myMask[M / 2] = 10;
+  for (size_t i = 1; i <= M / 2; i++)
+  {
+    myMask[M / 2 + i] = myMask[M / 2 - i] = 10 / (i + 1);
+  }
 
-  // Allocating host variables
-  double *input, *output, *outputTest, *outputTest2, *outputTest3;
+  printf("\nLength of input data = %d and mask size = %d \n", N, M);
 
+  double *input, *outputBase;
   input = (double *)malloc((int)(N * sizeof(double)));
-  output = (double *)malloc((int)(N * sizeof(double)));
-  outputTest = (double *)malloc((int)(N * sizeof(double)));
-  outputTest2 = (double *)malloc((int)(N * sizeof(double)));
-  outputTest3 = (double *)malloc((int)(N * sizeof(double)));
+  outputBase = (double *)malloc((int)(N * sizeof(double)));
 
   // Random Input generation
   time_t t;
@@ -45,60 +46,89 @@ int main(int argc, char **argv)
 
   for (int i = 0; i < N; i++)
   {
-    *(input + i) = rand() % 5 + 1; // 0.1 * (rand() % 5)
+    *(input + i) = rand() % 10 + 1;
   }
+
+  // Sequential baseline implementation
+
+  auto startSeq = std::chrono::system_clock::now();
+  conv1DSequentialLauncher(input,
+                           outputBase,
+                           myMask,
+                           M / 2,
+                           N);
+
+  auto endSeq = std::chrono::system_clock::now();
+
+  double timeSeq = std::chrono::duration_cast<std::chrono::milliseconds>(endSeq - startSeq).count();
+
+  cout << "\n=================== Sequential Implementation of Conv1D ====================" << endl;
+
+  cout << "Elapsed time : " << timeSeq << endl;
+
+  // Allocating host variables
+  double *outputTest0, *outputTest1, *outputTest2, *outputTest3;
 
   // Launching Conv 1D kernels through their corresponding wrappers
   // M/2 is half the kernel size
   float timeBasic, timeTiled, timeTiledStatic, timeTiledDynamic;
 
+  //-------------------------------------0-----------------------------------
+
+  cout << "\n============ Testing Basic GPU Parallel Conv1D ============" << endl;
+
+  int correct = 1;
+  outputTest0 = (double *)malloc((int)(N * sizeof(double)));
+
   conv1DKernelBasicLauncher(input,
-                            output,
+                            outputTest0,
                             myMask,
                             M / 2,
                             N,
                             &timeBasic);
 
+  for (int i = 0; i < N; i++)
+  {
+    correct *= int(outputBase[i] == outputTest0[i]);
+    if (!correct)
+    {
+      cout << "Left loop, test failed at i = " << i << endl;
+      cout << "true value = " << outputBase[i] << endl;
+      cout << "false value = " << outputTest0[i] << endl;
+      break;
+    }
+  }
+
+  if (correct)
+  {
+    cout << "============ Test 1 passed successfully ! ============" << endl;
+    cout << "Elapsed time : " << timeBasic << endl;
+  }
+
+  free(outputTest0);
+
+  //-------------------------------------1-----------------------------------
+  cout << "\n============ Testing Tiled Conv1D ============" << endl;
+
+  correct = 1;
+
+  outputTest1 = (double *)malloc((int)(N * sizeof(double)));
+
   conv1DKernelTiledLauncher(input,
-                            outputTest,
+                            outputTest1,
                             myMask,
                             M / 2,
                             N,
                             &timeTiled);
 
-  conv1DKernelSimplyTiledLauncher(input,
-                                  outputTest2,
-                                  myMask,
-                                  M / 2,
-                                  N,
-                                  &timeTiledStatic);
-
-  conv1DKernelTiledDynamicSharedLauncher(input,
-                                         outputTest3,
-                                         myMask,
-                                         M / 2,
-                                         N,
-                                         &timeTiledDynamic);
-
-  //-------------------------------------0-----------------------------------
-
-  cout << "============ Basic Implementation of Conv1D (No Tiling | No Shared Memory) ============" << endl;
-
-  cout << "Elapsed time : " << timeBasic << endl;
-
-  //-------------------------------------1-----------------------------------
-  cout << "============ Testing Tiled Conv1D ============" << endl;
-
-  int correct = 1;
-
   for (int i = 0; i < N; i++)
   {
-    correct *= int(output[i] == outputTest[i]);
+    correct *= int(outputBase[i] == outputTest1[i]);
     if (!correct)
     {
       cout << "Left loop, test failed at i = " << i << endl;
-      cout << "true value = " << output[i] << endl;
-      cout << "false value = " << outputTest[i] << endl;
+      cout << "true value = " << outputBase[i] << endl;
+      cout << "false value = " << outputTest1[i] << endl;
       break;
     }
   }
@@ -109,17 +139,29 @@ int main(int argc, char **argv)
     cout << "Elapsed time : " << timeTiled << endl;
   }
 
+  free(outputTest1);
+
   //-------------------------------------2-----------------------------------
 
   printf("\n============ Testing Simply Tiled Conv1D ============\n");
   correct = 1;
+
+  outputTest2 = (double *)malloc((int)(N * sizeof(double)));
+
+  conv1DKernelSimplyTiledLauncher(input,
+                                  outputTest2,
+                                  myMask,
+                                  M / 2,
+                                  N,
+                                  &timeTiledStatic);
+
   for (int i = 0; i < N; i++)
   {
-    correct *= int(output[i] == outputTest2[i]);
+    correct *= int(outputBase[i] == outputTest2[i]);
     if (!correct)
     {
       cout << "Left loop, test failed at i = " << i << endl;
-      cout << "true value = " << output[i] << endl;
+      cout << "true value = " << outputBase[i] << endl;
       cout << "false value = " << outputTest2[i] << endl;
       break;
     }
@@ -131,18 +173,29 @@ int main(int argc, char **argv)
     cout << "Elapsed time : " << timeTiledStatic << endl;
   }
 
+  free(outputTest2);
+
   //-------------------------------------3-----------------------------------
 
-  printf("\nTesting Tiled Conv1D with dynamic shared memory\n");
+  printf("\n============Testing Tiled Conv1D with dynamic shared memory============\n");
   correct = 1;
+
+  outputTest3 = (double *)malloc((int)(N * sizeof(double)));
+
+  conv1DKernelTiledDynamicSharedLauncher(input,
+                                         outputTest3,
+                                         myMask,
+                                         M / 2,
+                                         N,
+                                         &timeTiledDynamic);
 
   for (int i = 0; i < N; i++)
   {
-    correct *= int(output[i] == outputTest3[i]);
+    correct *= int(outputBase[i] == outputTest3[i]);
     if (!correct)
     {
       cout << "Left loop, test failed at i = " << i << endl;
-      cout << "true value = " << output[i] << endl;
+      cout << "true value = " << outputBase[i] << endl;
       cout << "false value = " << outputTest3[i] << endl;
       break;
     }
@@ -155,9 +208,7 @@ int main(int argc, char **argv)
   }
 
   free(input);
-  free(output);
-  free(outputTest);
-  free(outputTest2);
+  free(outputBase);
 
   return 0;
 }
