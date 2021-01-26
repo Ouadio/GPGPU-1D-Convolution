@@ -1,9 +1,11 @@
 # Parallel Pattern : Convolution
-## A set of Parallelized 1D Convolution implementations using CUDA with basic performance benchmarking
+## A set of Parallelized 1D Convolution implementations using CUDA with basic performance benchmarking  
+### 0. Naive Sequential implementation  
 ### I. Naive basic implementation  
 ### II. Tiled implementation  
 ### III. Simplified Tiled implementation 
-### IV. Tiled implementation with dynamic shared memory usage 
+### IV. Tiled implementation with dynamic shared memory usage  
+### V. Nested Loop implementation (more work per thread)  
 -----------
 + **In progress** : 
     + (Test) Including GTest/GMock suites as project submodule.

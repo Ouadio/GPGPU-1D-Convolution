@@ -1,6 +1,10 @@
 #ifndef CONV1D_KERNEL
 #define CONV1D_KERNEL
 
+void conv1DKernelLoopLauncher(const double *input, double *output,
+                              double *myMask, int half_mask_size, int N,
+                              float *time);
+
 void conv1DSequentialLauncher(const double *input,
                               double *output,
                               double *myMask,

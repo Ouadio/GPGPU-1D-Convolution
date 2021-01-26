@@ -67,11 +67,11 @@ int main(int argc, char **argv)
   cout << "Elapsed time : " << timeSeq << endl;
 
   // Allocating host variables
-  double *outputTest0, *outputTest1, *outputTest2, *outputTest3;
+  double *outputTest0, *outputTest1, *outputTest2, *outputTest3, *outputTest4;
 
   // Launching Conv 1D kernels through their corresponding wrappers
   // M/2 is half the kernel size
-  float timeBasic, timeTiled, timeTiledStatic, timeTiledDynamic;
+  float timeBasic, timeTiled, timeTiledStatic, timeTiledDynamic, timeLoop;
 
   //-------------------------------------0-----------------------------------
 
@@ -101,7 +101,7 @@ int main(int argc, char **argv)
 
   if (correct)
   {
-    cout << "============ Test 1 passed successfully ! ============" << endl;
+    cout << "============ Test 0 passed successfully ! ============" << endl;
     cout << "Elapsed time : " << timeBasic << endl;
   }
 
@@ -206,6 +206,40 @@ int main(int argc, char **argv)
     cout << "============ Test 3 passed successfully ! ============" << endl;
     cout << "Elapsed time : " << timeTiledDynamic << endl;
   }
+
+  //-------------------------------------4-----------------------------------
+
+  cout << "\n============ Testing Loop based GPU Parallel Conv1D ============" << endl;
+
+  correct = 1;
+  outputTest4 = (double *)malloc((int)(N * sizeof(double)));
+
+  conv1DKernelLoopLauncher(input,
+                           outputTest4,
+                           myMask,
+                           M / 2,
+                           N,
+                           &timeLoop);
+
+  for (int i = 0; i < N; i++)
+  {
+    correct *= int(outputBase[i] == outputTest4[i]);
+    if (!correct)
+    {
+      cout << "Left loop, test failed at i = " << i << endl;
+      cout << "true value = " << outputBase[i] << endl;
+      cout << "false value = " << outputTest4[i] << endl;
+      break;
+    }
+  }
+
+  if (correct)
+  {
+    cout << "============ Test 4 passed successfully ! ============" << endl;
+    cout << "Elapsed time : " << timeLoop << endl;
+  }
+
+  free(outputTest4);
 
   free(input);
   free(outputBase);
