@@ -31,7 +31,7 @@ int main(int argc, char **argv)
   myMask[M / 2] = 10;
   for (size_t i = 1; i <= M / 2; i++)
   {
-    myMask[M / 2 + i] = myMask[M / 2 - i] = 10 / (i + 1);
+    myMask[M / 2 + i] = myMask[M / 2 - i] = (double)10 / (i + 1);
   }
 
   printf("\nLength of input data = %d and mask size = %d \n", N, M);
@@ -89,7 +89,7 @@ int main(int argc, char **argv)
 
   for (int i = 0; i < N; i++)
   {
-    correct *= int(outputBase[i] == outputTest0[i]);
+    correct *= (abs(outputBase[i] - outputTest0[i]) < 1e-5);
     if (!correct)
     {
       cout << "Left loop, test failed at i = " << i << endl;
@@ -123,7 +123,7 @@ int main(int argc, char **argv)
 
   for (int i = 0; i < N; i++)
   {
-    correct *= int(outputBase[i] == outputTest1[i]);
+    correct *= (abs(outputBase[i] - outputTest1[i]) < 1e-5);
     if (!correct)
     {
       cout << "Left loop, test failed at i = " << i << endl;
@@ -157,7 +157,7 @@ int main(int argc, char **argv)
 
   for (int i = 0; i < N; i++)
   {
-    correct *= int(outputBase[i] == outputTest2[i]);
+    correct *= (abs(outputBase[i] - outputTest2[i]) < 1e-5);
     if (!correct)
     {
       cout << "Left loop, test failed at i = " << i << endl;
@@ -191,7 +191,7 @@ int main(int argc, char **argv)
 
   for (int i = 0; i < N; i++)
   {
-    correct *= int(outputBase[i] == outputTest3[i]);
+    correct *= (abs(outputBase[i] - outputTest3[i]) < 1e-5);
     if (!correct)
     {
       cout << "Left loop, test failed at i = " << i << endl;
@@ -223,7 +223,7 @@ int main(int argc, char **argv)
 
   for (int i = 0; i < N; i++)
   {
-    correct *= int(outputBase[i] == outputTest4[i]);
+    correct *= (abs(outputBase[i] - outputTest4[i]) < 1e-5);
     if (!correct)
     {
       cout << "Left loop, test failed at i = " << i << endl;
